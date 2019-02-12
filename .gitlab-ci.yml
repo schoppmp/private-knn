@@ -1,0 +1,8 @@
+variables:
+  REGISTRY: gitlab.informatik.hu-berlin.de:4567
+
+build_all:
+  image: $REGISTRY/ti/software/bazel-builder:latest
+  stage: build
+  script:
+    - bazel build ...
