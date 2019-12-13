@@ -1,0 +1,108 @@
+from util import if_else
+from random import randint
+
+# num_servers = 2
+# max_k = 20
+# #max_n = num_servers * max_k
+# max_n = 40
+
+# TODO: use for_range_opt everywhere
+
+def generate_fake_inputs(n, max_n):
+	#n = k * num_servers
+	ret = Array(max_n, sint)
+	@for_range(n)
+	def _(i):
+		ret[i] = sint(regint.get_random(16))
+	ret[17] = 65537
+	return ret
+
+def top_k(values, n, max_k, curr_k):
+	topk_values = Array(max_k, sint)
+	topk_indices = Array(max_k, sint)
+	@for_range(curr_k)
+	def _(i):
+		#start_timer(2)
+		max_value = MemValue(sint(0))
+		max_index = MemValue(sint(0))
+		@for_range(n)
+		def _(j):
+			c = values[j] > max_value
+			max_value.write(if_else(c, values[j], max_value))
+			max_index.write(if_else(c, sint(j), max_index))
+
+		topk_values[i] = max_value
+		topk_indices[i] = max_index
+
+		@for_range(n)
+		def _(j):
+			values[j] = if_else(sint(j) == max_index, sint(0), values[j])
+		#stop_timer(2)
+	return (topk_values, topk_indices)
+				
+		
+
+		
+
+def main():
+	num_servers = 2
+	max_k = 60
+	max_n = num_servers * max_k
+
+	experiment = MemValue(cint(0))
+	@do_while
+	def _():
+		print_ln('Run %s', experiment.read())
+		experiment.write(experiment.read()+1)
+		@for_range(max_k)
+		def _(k):
+			n = k * num_servers
+			values = generate_fake_inputs(n, max_n)
+			print_ln("k = %s", k)
+			start_timer(1)
+			(topk_values, topk_indices) = top_k(values, n, max_k, k)
+			stop_timer(1)
+			@for_range(k)
+			def _(j):
+				print_ln("max[%s]: %s with index %s", j, topk_values[j].reveal(), topk_indices[j].reveal())
+		return True
+
+main()
+#def quicksort(n, )
+
+# experiment = MemValue(cint(0))
+# @do_while
+# def _():
+# 	print_ln('Run %s', experiment.read())
+# 	experiment.write(experiment.read()+1)
+# 	@for_range(max_k)
+# 	def _(k):
+# 		start_timer(1)
+# 		n = k * num_servers
+# 		values = generate_fake_inputs(k)
+# 		topk = Array(max_k, sint)
+# 		topk_idxs = Array(max_k, sint)
+# 		# initialize topk values to 0/1
+# 		@for_range(k)
+# 		def _(i):
+# 			topk[i] = sint(1)
+# 		@for_range(k)
+# 		def _(j):
+# 			start_timer(2)
+# 			max_value = MemValue(sint(0))
+# 			max_index = MemValue(sint(0))
+# 			@for_range(n)
+# 			def _(i):
+# 				c = values[i] > max_value
+# 				#print_ln('c: %s', c.reveal())
+# 				max_index.write(if_else(c, sint(i), max_index))
+# 				max_value.write(if_else(c, values[i], max_value))
+# 			topk_idxs[j] = max_index
+# 			topk[j] = max_value
+# 			@for_range(n)
+# 			def _(i):
+# 				values[i] = if_else(sint(i) == max_index, sint(0), values[i])
+# 			print_ln('max[%s]: %s, %s', k, topk_idxs[j].reveal(), topk[j].reveal())
+# 			stop_timer(2)
+# 		stop_timer(1)
+# 	return 0 # loop indefinitely

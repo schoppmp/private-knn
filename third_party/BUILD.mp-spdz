@@ -1,0 +1,35 @@
+
+py_library(
+    name = "compiler_lib",
+    srcs = glob(["Compiler/**/*.py"]),
+    visibility = [":__subpackages__"],
+)
+
+# py_library(
+#     name = "compiler_srcs",
+#     srcs = [":compiler_lib"],
+# )
+
+py_binary(
+    name = "compile",
+    srcs = ["compile.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":compiler_lib"
+    ]
+)
+
+filegroup(
+    name = "all_files",
+    visibility = ["//visibility:public"],
+    srcs = glob(["**"]),
+)
+
+# cc_binary(
+#     name = "semi_party.x",
+#     #srcs = ["semi_party.x"],
+#     visibility = ["//visibility:public"],
+#     copts = [],
+# )
+
+

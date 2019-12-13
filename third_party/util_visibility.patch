@@ -1,0 +1,12 @@
+diff --git a/sparse_linear_algebra/util/BUILD b/sparse_linear_algebra/util/BUILD
+index a234a90..dacf492 100644
+--- a/sparse_linear_algebra/util/BUILD
++++ b/sparse_linear_algebra/util/BUILD
+@@ -1,5 +1,5 @@
+-package(default_visibility = ["//sparse_linear_algebra:__subpackages__"])
+-
++#package(default_visibility = ["//sparse_linear_algebra:__subpackages__", "//private_knn:__subpackages__"])
++package(default_visibility = ["//visibility:public"])
+ cc_library(
+     name = "util",
+     deps = [
