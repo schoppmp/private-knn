@@ -1,6 +1,6 @@
 # private-knn
 
-Code for [Private Nearest Neighbors Classification in Federated Databases](https://gitlab.informatik.hu-berlin.de/ti/papers/private-knn)
+Code for [Private Nearest Neighbors Classification](https://eprint.iacr.org/2018/289)
 
 # Build Instructions
 This repository uses the build system [Bazel](https://bazel.build/).
