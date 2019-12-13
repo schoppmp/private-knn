@@ -11,7 +11,6 @@ oblivc_library(
     deps = [
         "@ack//:oram",
     ],
-    visibility = ["//visibility:public"],
 )
 
 cc_binary(
@@ -19,12 +18,14 @@ cc_binary(
     srcs = [
         "dp_idf_timing.cpp",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":dp_idf",
-        "@boost//:range",
-        "@mpc_utils//mpc_utils:comm_channel_oblivc",
-        "@mpc_utils//mpc_utils:mpc_config",
-        "@mpc_utils//mpc_utils:benchmarker",
+        "@abseil//absl/strings",
         "//private_knn/util:get_ceil",
-    ]
+        "@boost//:range",
+        "@mpc_utils//mpc_utils:benchmarker",
+        "@mpc_utils//mpc_utils:comm_channel_oblivc_adapter",
+        "@mpc_utils//mpc_utils:mpc_config",
+    ],
 )
