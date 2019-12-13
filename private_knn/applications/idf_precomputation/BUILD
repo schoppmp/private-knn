@@ -21,9 +21,9 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":dp_idf",
-        "@abseil//absl/strings",
         "//private_knn/util:get_ceil",
         "@boost//:range",
+        "@com_google_absl//absl/strings",
         "@mpc_utils//mpc_utils:benchmarker",
         "@mpc_utils//mpc_utils:comm_channel_oblivc_adapter",
         "@mpc_utils//mpc_utils:mpc_config",

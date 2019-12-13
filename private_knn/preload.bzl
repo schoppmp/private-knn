@@ -7,7 +7,14 @@ load(
 # Copy those in a similar preload.bzl file in any workspace that depends on
 # this one.
 def private_knn_deps_preload():
-
+    # Transitive dependencies of room_framework.
+    if "com_google_absl" not in native.existing_rules():
+        http_archive(
+            name = "com_google_absl",
+            urls = ["https://github.com/abseil/abseil-cpp/archive/ccdd1d57b6386ebc26fb0c7d99b604672437c124.zip"],
+            strip_prefix = "abseil-cpp-ccdd1d57b6386ebc26fb0c7d99b604672437c124",
+            sha256 = "a463a791e1b5eaad461956495401357efb792fcdbf47b5737ec420bb54c804b6",
+        )
     if "io_bazel_rules_go" not in native.existing_rules():
         http_archive(
             name = "io_bazel_rules_go",
@@ -26,6 +33,7 @@ def private_knn_deps_preload():
             ],
             sha256 = "86c6d481b3f7aedc1d60c1c211c6f76da282ae197c3b3160f54bd3a8f847896f",
         )
+
     # Transitive dependencies of sparse_linear_algebra.
     if "com_github_nelhage_rules_boost" not in native.existing_rules():
         http_archive(
@@ -58,17 +66,10 @@ def private_knn_deps_preload():
     if "com_github_schoppmp_mpc_utils" not in native.existing_rules():
         http_archive(
             name = "mpc_utils",
-            url = "https://github.com/schoppmp/mpc-utils/archive/1b97fad04b78d9d3e0b6780a4b782b4c017ebe5c.zip",
-            sha256 = "8d81c56cfdbd757d5e4b4885bc0dff9c7b57f44c8b439bc340e61ccf24c48a87",
-            strip_prefix = "mpc-utils-1b97fad04b78d9d3e0b6780a4b782b4c017ebe5c",
+            url = "https://github.com/schoppmp/mpc-utils/archive/a35aa139baf43103d88e1c610bee5e6292ade306.zip",
+            sha256 = "68201d1d935576765d7357d750416a3a80fe7be0c2529bbfbeab9665e5b71875",
+            strip_prefix = "mpc-utils-a35aa139baf43103d88e1c610bee5e6292ade306",
         )
-    # if "io_bazel_rules_docker" not in native.existing_rules():
-    #     http_archive(
-    #         name = "io_bazel_rules_docker",
-    #         sha256 = "ed884a780b82b0586b9c5454a2163b4133b2c50788f9334de4b6008780e26032",
-    #         strip_prefix = "rules_docker-170335d284991ecc9fa5a6682c46bd32f167daa9",
-    #         url = "https://github.com/bazelbuild/rules_docker/archive/170335d284991ecc9fa5a6682c46bd32f167daa9.zip",
-    #     )
     if "io_bazel_rules_docker" not in native.existing_rules():
         http_archive(
             name = "io_bazel_rules_docker",
@@ -76,10 +77,8 @@ def private_knn_deps_preload():
             strip_prefix = "rules_docker-0.12.1",
             urls = ["https://github.com/bazelbuild/rules_docker/releases/download/v0.12.1/rules_docker-v0.12.1.tar.gz"],
         )
-            
 
-
-    if "com_github_schoppmp_room_framework" not in native.existing_rules():
+    if "room_framework" not in native.existing_rules():
         http_archive(
             name = "room_framework",
             sha256 = "50d436be1ae525ae556d315cda253c6ba5fa3061d5492c245fc0def918418415",
@@ -88,9 +87,11 @@ def private_knn_deps_preload():
             # TODO: remove this simple visibility patch by merging the small change into the room repo
             patch_args = ["-p1"],
             patches = ["//third_party:util_visibility.patch"],
+            repo_mapping = {"@abseil": "@com_google_absl"},
         )
-    http_archive(
-        name = "rules_python",
-        url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.1/rules_python-0.0.1.tar.gz",
-        sha256 = "aa96a691d3a8177f3215b14b0edc9641787abaaa30363a080165d06ab65e1161",
-    )
+    if "rules_python" not in native.existing_rules():
+        http_archive(
+            name = "rules_python",
+            url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.1/rules_python-0.0.1.tar.gz",
+            sha256 = "aa96a691d3a8177f3215b14b0edc9641787abaaa30363a080165d06ab65e1161",
+        )
