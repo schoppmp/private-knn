@@ -1,7 +1,7 @@
 load("@com_github_schoppmp_rules_oblivc//oblivc:oblivc.bzl", "oblivc_library")
 
 oblivc_library(
-    name = "knn",
+    name = "top_k",
     srcs = [
         "top_k.oc",
     ],
@@ -21,8 +21,8 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":knn",
-        "@abseil//absl/strings",
+        ":top_k",
+        "@com_google_absl//absl/strings",
         "@mpc_utils//mpc_utils:benchmarker",
         "@mpc_utils//mpc_utils:comm_channel_oblivc_adapter",
         "@mpc_utils//mpc_utils:mpc_config",

@@ -1,9 +1,10 @@
+#include <stdio.h>
+
 #include "copy.oh"
 #include "obliv.oh"
 #include "top_k.h"
-#include <stdio.h>
 
-void top_k_oblivc(void* vargs) {  
+void top_k_oblivc(void* vargs) {
   knn_oblivc_args* args = vargs;
 
   obliv uint8_t* inputs =
@@ -26,8 +27,10 @@ void top_k_oblivc(void* vargs) {
     __obliv_c__setPlainAdd(
         &inputs[i * args->value_size], &inputs[i * args->value_size],
         &inputs_b[i * args->value_size], 8 * args->value_size);
-    // TODO: We can replace these division with multiplications and use additive
-    // sharing which is faster.
+
+    // TODO: We can replace these divisions with multiplications and use
+    //   additive sharing which is faster.
+
     // Divide by norm of A's document i.
     __obliv_c__setDivUnsigned(
         &inputs[i * args->value_size], &inputs[i * args->value_size],
@@ -37,55 +40,46 @@ void top_k_oblivc(void* vargs) {
                               &inputs[i * args->value_size], norm_b,
                               8 * args->value_size);
   }
-  
+
+  uint64_t *inputs_clear = calloc(args->num_elements, sizeof(uint64_t));
+  revealOblivLLongArray(inputs_clear, inputs, args->num_elements, 0);
+  for(int i = 0; i < args->num_elements; i++) {
+    printf(" %d", inputs_clear[i]);
+  }
+  printf("\n");
+
+
   obliv int* topk_indices = calloc(args->num_selected, sizeof(obliv int));
   obliv uint8_t* topk_values =
       calloc(args->num_selected * args->value_size, sizeof(obliv uint8_t));
+  // ignore makes sure we only copy each value once to the top-k.
+  obliv bool* ignore = calloc(args->num_elements, sizeof(obliv bool));
   OcCopy cpy_value = ocCopyCharN(args->value_size);
-  for (int i = 0; i < args->num_elements; i++) {
-    // keep_going makes sure we only copy each value once to the top-k.
-    obliv bool keep_going = true;
-    for (int j = 0; j < args->num_selected; j++) {
-      obliv bool is_nearer;
+  for (int j = 0; j < args->num_selected; j++) {
+    obliv bool is_empty = 1;
+    for (int i = 0; i < args->num_elements; i++) {
+      obliv bool is_nearer = 0;
       __obliv_c__setLessThanUnsigned(
           &is_nearer, &topk_values[j * args->value_size],
           &inputs[i * args->value_size], 8 * args->value_size);
-      obliv if (keep_going & is_nearer) {
-        keep_going = false;
+      obliv
+      if ((is_nearer | is_empty) & (ignore[i] == 0)) {
+        is_empty = 0;
         ocCopy(&cpy_value, &topk_values[j * args->value_size],
                &inputs[i * args->value_size]);
         topk_indices[j] = i;
       }
     }
+    for (int i = 0; i < args->num_elements; i++) {
+      obliv if(i == topk_indices[j]) {
+        ignore[i] = 1;
+      }
+    }
   }
 
-  // bitmask for already visited values
-  // obliv int* top_k_bitmap = calloc(args->num_element/32, sizeof(obliv int));
-  // obliv bool* top_k_visited = calloc(args->num_elements, sizeof(obliv bool));
-
-  // for (int j = 0; j < args->num_selected; j++) {
-  //   for (int i = 0; i < args->num_elements; i++) {
-  //     obliv bool is_nearer;
-  //     __obliv_c__setLessThanUnsigned(
-  //         &is_nearer, &topk_values[j * args->value_size],
-  //         &inputs[i * args->value_size], 8 * args->value_size);
-
-  //     //obliv bool is_not_present = top_k//((top_k_bitmap[i/32] >> (i % 32)) & 1) == 0;
-
-
-  //     // // check if value is higher and not already in the top_k list
-  //     // obliv bool is_present = ((topk_indices[i/32] >> (i % 32)) & 1) != 0;
-  //     obliv if (is_nearer & ~top_k_visited[i]) {
-  //       top_k_visited[i] = 1;
-  //       ocCopy(&cpy_value, &topk_values[j * args->value_size],
-  //              &inputs[i * args->value_size]);
-  //       topk_indices[j] = i;
-  //     }
-  //   }
-  // }
-
-
-
+  // TODO: Actually, we want to secret-share the values and corresponding
+  //   classes (for top-k classification). This is good enough for testing
+  //   though.
   revealOblivIntArray(args->result, topk_indices, args->num_selected, 2);
   revealOblivIntArray(args->result, topk_indices, args->num_selected, 1);
 
@@ -95,4 +89,5 @@ void top_k_oblivc(void* vargs) {
   free(inputs_b);
   free(norms_a);
   free(norm_b);
+  free(ignore);
 }

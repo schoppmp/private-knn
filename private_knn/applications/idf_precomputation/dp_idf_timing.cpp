@@ -106,7 +106,7 @@ int main(int argc, const char *argv[]) {
             std::cout << "vocabulary_size = " << vocabulary_size
                       << "\nnum_samples = " << num_samples << "\n";
             std::vector<double> probabilities(vocabulary_size, 0);
-            double count_max = 1000., epsilon = epsilon, normalizer = 0.;
+            double count_max = 1000., epsilon = conf.epsilon, normalizer = 0.;
             for (size_t i = 0; i < vocabulary_size; i++) {
               probabilities[i] =
                   std::exp(count_max / (i + 1) * epsilon / (2 * num_samples));
