@@ -1,6 +1,6 @@
 # private-knn
 
-Code for [Private Nearest Neighbors Classification](https://eprint.iacr.org/2018/289)
+Code for [Private Nearest Neighbors Classification](https://eprint.iacr.org/2018/289).
 
 # Build Instructions
 This repository uses the build system [Bazel](https://bazel.build/).
@@ -39,6 +39,7 @@ Firstly, we use [Obliv-C](https://oblivc.org/) and you have to install its depen
 2. If you are using OPAM as your package manager, and this is the first time you are using it, set it up:
    ```
    opam init --compiler 4.06.0
+   opam switch 4.06.0
    eval `opam config env`
    opam install camlp4 ocamlfind ocamlbuild batteries
    ```
@@ -66,73 +67,137 @@ the experiments docker images and import them into your docker instance, do the
 following:
 ```
 bazel run //private_knn/experiments/idf_precomputation:idf_precomputation -- --norun
+bazel run //private_knn/experiments/knn/two_party_phase:image -- --norun
 bazel run //private_knn/experiments/knn/two_party_phase:non_uniform_sparsity -- --norun
 bazel run //private_knn/experiments/knn/two_party_phase:realworld_nonzeros -- --norun
 bazel run //private_knn/experiments/knn/multi_party_phase:topk -- --norun
 ```
 
 # Running the experiments
-After building, either manually or via the provided docker image, four tagged images should be available in your docker instance:
+After building, either manually or via the provided docker image, five tagged images should be available in your docker instance:
 * `bazel/private_knn/experiments/idf_precomputation:idf_precomputation`
+* `bazel/private_knn/experiments/knn/two_party_phase:image`
 * `bazel/private_knn/experiments/knn/two_party_phase:non_uniform_sparsity`
 * `bazel/private_knn/experiments/knn/two_party_phase:realworld_nonzeros`
 * `bazel/private_knn/experiments/knn/multi_party_phase:topk`
 
-Generally, to run one party of the experiments, do the following:
+Generally, to run the server for one of the experiments locally, do the following:
 ```
-docker run -it --network host <image name> 
+docker run -t --name <some name> --expose <some port> <image name> <image args>
 ```
 
-The switch `-t` is required so that the parties can output result data, `-i` is needed to be able to cancel the experiments easily with `Ctrl-C` and 
-`--network host` is required if you want to try out the experiments locally.
-Otherwise, you can forward ports from the docker container to your host via `-p
-<host port><container port>`. These Arguments all have to come before `<image
-name>` as all arguments after the image name are sent to the binary that is run
-inside the container.
+To run the client for one of the experiments locally, do the following:
+```
+docker run -t --link <name of server container>:<name of server container> <image name> <image args>
+```
 
+The switch `-t` is required so that the parties can output result data
+to stdout and `--name,--expose` respectively `--link` is required if
+you want to try out the experiments locally.  Otherwise, you can
+forward ports from the docker container to your host via `-p <host
+port><container port>` and specify the IP of the server in the image
+arguments via `--server.host <ip>` (*in both the client and server
+invocations*). These Arguments (except `--server.host` which has to be
+specified after, as it is an image argument) all have to come before
+`<image name>` as all arguments after the image name are sent to the
+binary that is run inside the container.
+
+
+## Configuration
+The experiments *Private IDF Precomputation* and *Sparse Matrix-Vector
+Multiplication* can run for a very long time, especially if not run on
+a powerful server, as we try many different parameters. To play around
+with these images, you can try your own parameter combination by
+changing the `.ini` files that control the experiments. The experiments
+can be invoked with a different config file by specifing it as a volume
+when starting both docker containers and pointing the binary to the
+correct file via an environment variable:
+
+```
+docker run -t <other docker args omitted for brevity> -v <path_to_your_custom_config>:/<some name>.ini -e MPC_UTILS_CONFIG=/<some name>.ini <image name> <image args>
+```
+
+To see how the config files are structured, confront the toy config
+and the default configs for each experiment, whose paths are specified
+below.
+
+Sadly, this does not work with the last phase, the *Top-k selection
+phase* as it has hardcoded experiments at the moment. It should not
+take as long however and more clearly show its progress, so you should
+be able to play around with it even on a less powerful machine.
+
+As an example you can run the toy example below locally with a new config `custom.ini`
+that is in your current working directory by executing
+```
+docker run -t -v ./custom.ini:/custom.ini -e MPC_UTILS_CONFIG=/custom.ini --name private_knn_example_p0 --expose 12347 bazel/private_knn/experiments/knn/two_party_phase:image  --server.port 12347 --server.host private_knn_example_p0 --party 0
+```
+for the server and 
+```
+docker run -t -v ./custom.ini:/custom.ini -e MPC_UTILS_CONFIG=/custom.ini --link private_knn_example_p0:private_knn_example_p0 bazel/private_knn/experiments/knn/two_party_phase:image  --server.port 12347 --server.host private_knn_example_p0 --party 1
+```
+for the client.
+
+## Toy example
+There is a small example image, that just runs the sparse
+matrix-vector multiplication for a single parameter combination. Its
+config lies in
+`private-knn/experiments/knn/two_party_phase/configs/knn.ini`. This
+example should take around five minutes on a relatively new PC or
+laptop.
+
+The server can be run locally with 
+```
+docker run -t --name private_knn_example_p0 --expose 12347 bazel/private_knn/experiments/knn/two_party_phase:image  --server.port 12347 --server.host private_knn_example_p0 --party 0
+```
+and the client with 
+```
+docker run -t --link private_knn_example_p0:private_knn_example_p0 bazel/private_knn/experiments/knn/two_party_phase:image  --server.port 12347 --server.host private_knn_example_p0 --party 1
+``` 
 
 ## Private IDF Precomputation
+The config for this experiment lies in `private-knn/experiments/knn/idf_precomputation/id_precomputation.ini`.
 To run the experiment of figure 5b locally, start the server via
 ```
-docker run -it --network host bazel/private_knn/experiments/idf_precomputation:idf_precomputation --server.port 12347 --server.host localhost --party 0
+docker run -t --name private_knn_idf_p0 --expose 12347 bazel/private_knn/experiments/idf_precomputation:idf_precomputation --server.port 12347 --server.host private_knn_idf_p0 --party 0
 ```
 and the client via
 ```
-docker run -it --network host bazel/private_knn/experiments/idf_precomputation:idf_precomputation  --server.port 12347 --server.host localhost --party 1
+docker run -t --link private_knn_idf_p0:private_knn_idf_p0 bazel/private_knn/experiments/idf_precomputation:idf_precomputation  --server.port 12347 --server.host private_knn_idf_p0 --party 1
 ``` 
 
 ## Sparse matrix-vector multiplicaton
+The config for this experiment lies in `private-knn/experiments/knn/two_party_phase/configs/non_uniform_sparsity.ini`.
 To run the experiment of figure 5a locally, start the server via
 ```
-docker run -it --network host bazel/private_knn/experiments/knn/two_party_phase:non_uniform_sparsity  --server.port 12347 --server.host localhost --party 0
+docker run -t --name private_knn_two_party1_p0 --expose 12347 bazel/private_knn/experiments/knn/two_party_phase:non_uniform_sparsity  --server.port 12347 --server.host private_knn_two_party1_p0 --party 0
 ```
 and the client via
 ```
-docker run -it --network host bazel/private_knn/experiments/knn/two_party_phase:non_uniform_sparsity  --server.port 12347 --server.host localhost --party 1
+docker run -t --link private_knn_two_party1_p0:private_knn_two_party1_p0 bazel/private_knn/experiments/knn/two_party_phase:non_uniform_sparsity  --server.port 12347 --server.host private_knn_two_party1_p0 --party 1
 ``` 
 
 To run the experiment of figure 6b locally, start the server via
 ```
-docker run -it --network host bazel/private_knn/experiments/knn/two_party_phase:realworld_nonzeros  --server.port 12347 --server.host localhost --party 0
+docker run -t --name private_knn_two_party2_p0 --expose 12347 bazel/private_knn/experiments/knn/two_party_phase:realworld_nonzeros  --server.port 12347 --server.host private_knn_two_party2_p0  --party 0
 ```
 and the client via
 ```
-docker run -it --network host bazel/private_knn/experiments/knn/two_party_phase:realworld_nonzeros  --server.port 12347 --server.host localhost --party 1
+docker run -t --link private_knn_two_party2_p0:private_knn_two_party2_p0  bazel/private_knn/experiments/knn/two_party_phase:realworld_nonzeros  --server.port 12347 --server.host private_knn_two_party2_p0  --party 1
 ``` 
 
 ## Top-k selection phase
 To run the experiment of figure 6a locally with 3 parties, start one server via
 ```
-docker run -it --network host -e NUM_PARTIES=3 -e PARTY_ID=0
+docker run -t --network host -e NUM_PARTIES=3 -e PARTY_ID=0
  bazel/private_knn/experiments/knn/multi_party_phase:topk
 ```
 start another server via
 ```
-docker run -it --network host -e NUM_PARTIES=3 -e PARTY_ID=1
+docker run -t --network host -e NUM_PARTIES=3 -e PARTY_ID=1
  bazel/private_knn/experiments/knn/multi_party_phase:topk
 ```
 and the client via
 ```
-docker run -it --network host -e NUM_PARTIES=3 -e PARTY_ID=2
+docker run -t --network host -e NUM_PARTIES=3 -e PARTY_ID=2
  bazel/private_knn/experiments/knn/multi_party_phase:topk
 ```
